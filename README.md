@@ -41,8 +41,7 @@ Data disimpan menggunakan **localStorage**, sehingga aplikasi dapat langsung dig
 
 ## ☁️ Deployment
 
-- **Netlify** → drag & drop folder project ke Netlify dashboard.  
-- **Vercel** → klik *New Project* → pilih repo/upload → deploy otomatis.  
+- **Netlify** → (https://prismatic-dodol-104dc5.netlify.app)
 
 ---
 
