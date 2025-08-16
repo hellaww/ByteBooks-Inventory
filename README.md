@@ -67,7 +67,7 @@ Dalam pengembangan, **IBM Granite** digunakan untuk:
 
 ## 🔗 Demo Online
 
-[👉 Klik di sini untuk mencoba ByteBooks](https://your-deploy-link.netlify.app)  
+[👉 Klik di sini untuk mencoba ByteBooks](file:///Applications/XAMPP/xamppfiles/htdocs/bytebooks/index.html)  
 
 ---
 
