@@ -59,20 +59,11 @@ Dalam pengembangan, **IBM Granite** digunakan untuk:
 
 ---
 
-## 📸 Screenshot
 
-![ByteBooks Screenshot](./screenshot.png)  
 
----
 
-## 🔗 Demo Online
-
-[👉 Klik di sini untuk mencoba ByteBooks](//Applications/XAMPP/xamppfiles/htdocs/bytebooks/index.html)  
-
----
 
 ## 👨‍💻 Author
 
-- Nama: *(isi nama kamu)*  
-- Program Studi: *(isi prodi kamu)*  
+- Nama: *Hellawati Ayu Rizmadita*   
 - Tahun: 2025  
