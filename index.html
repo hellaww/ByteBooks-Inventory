@@ -1,0 +1,332 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ByteBooks — Inventory</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <header class="px-4 sm:px-6 lg:px-8 py-5 bg-white shadow">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <h1 class="text-xl sm:text-2xl font-bold">📚 ByteBooks — Inventory</h1>
+      <div class="flex items-center gap-2">
+        <button id="importBtn" class="px-3 py-2 rounded-lg border bg-white hover:bg-gray-50">Import JSON</button>
+        <button id="exportBtn" class="px-3 py-2 rounded-lg border bg-white hover:bg-gray-50">Export JSON</button>
+        <button id="addBtn" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">+ Add Book</button>
+        <input id="fileInput" type="file" accept="application/json" class="hidden" />
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Controls -->
+    <section class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div class="md:col-span-2">
+        <input id="searchInput" type="text" placeholder="Search by title/author..." class="w-full px-3 py-2 rounded-lg border bg-white" />
+      </div>
+      <div>
+        <select id="categoryFilter" class="w-full px-3 py-2 rounded-lg border bg-white">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div>
+        <select id="sortSelect" class="w-full px-3 py-2 rounded-lg border bg-white">
+          <option value="title-asc">Sort: Title ↑</option>
+          <option value="title-desc">Sort: Title ↓</option>
+          <option value="author-asc">Sort: Author ↑</option>
+          <option value="author-desc">Sort: Author ↓</option>
+          <option value="price-asc">Sort: Price ↑</option>
+          <option value="price-desc">Sort: Price ↓</option>
+          <option value="stock-asc">Sort: Stock ↑</option>
+          <option value="stock-desc">Sort: Stock ↓</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Table -->
+    <section class="bg-white rounded-2xl shadow overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100 text-left">
+            <tr>
+              <th class="px-4 py-3">Title</th>
+              <th class="px-4 py-3">Author</th>
+              <th class="px-4 py-3">Category</th>
+              <th class="px-4 py-3">Price</th>
+              <th class="px-4 py-3">Stock</th>
+              <th class="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
+        <p id="pageInfo" class="text-xs text-gray-600"></p>
+        <div class="flex gap-2">
+          <button id="prevBtn" class="px-3 py-1 rounded-lg border bg-white disabled:opacity-50">Prev</button>
+          <button id="nextBtn" class="px-3 py-1 rounded-lg border bg-white disabled:opacity-50">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-lg">
+      <div class="flex items-center justify-between px-5 py-4 border-b">
+        <h2 id="modalTitle" class="text-lg font-semibold">Add Book</h2>
+        <button id="closeModal" class="p-2 hover:bg-gray-100 rounded-lg">✕</button>
+      </div>
+      <form id="bookForm" class="p-5 grid grid-cols-1 gap-4">
+        <input type="hidden" id="bookId" />
+
+        <label class="grid gap-1">
+          <span class="text-sm">Title</span>
+          <input id="titleInput" required class="px-3 py-2 rounded-lg border" placeholder="e.g., Clean Code" />
+        </label>
+
+        <label class="grid gap-1">
+          <span class="text-sm">Author</span>
+          <input id="authorInput" required class="px-3 py-2 rounded-lg border" placeholder="e.g., Robert C. Martin" />
+        </label>
+
+        <label class="grid gap-1">
+          <span class="text-sm">Category</span>
+          <input id="categoryInput" class="px-3 py-2 rounded-lg border" placeholder="e.g., Programming" />
+        </label>
+
+        <div class="grid grid-cols-2 gap-4">
+          <label class="grid gap-1">
+            <span class="text-sm">Price (IDR)</span>
+            <input id="priceInput" type="number" min="0" step="100" value="0" class="px-3 py-2 rounded-lg border" />
+          </label>
+          <label class="grid gap-1">
+            <span class="text-sm">Stock</span>
+            <input id="stockInput" type="number" min="0" step="1" value="0" class="px-3 py-2 rounded-lg border" />
+          </label>
+        </div>
+
+        <div id="formError" class="text-red-600 text-sm hidden"></div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" id="cancelBtn" class="px-4 py-2 rounded-lg border bg-white">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  // ---------- Utilities ----------
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+  const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' });
+  const byText = (el, t) => (el.textContent = t);
+  const sanitize = (s) => String(s ?? '').toString(); // displayed via textContent only
+
+  // ---------- State ----------
+  const STORAGE_KEY = 'bytebooks.inventory.v1';
+  let books = [];
+  let page = 1;
+  const pageSize = 8;
+  let search = '';
+  let category = '';
+  let sort = 'title-asc';
+
+  // ---------- Persistence ----------
+  function load() {
+    try { books = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { books = []; }
+  }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(books)); }
+
+  // ---------- CRUD ----------
+  function addBook(b) {
+    books.push({ id: crypto.randomUUID(), ...b });
+    save();
+  }
+  function updateBook(id, patch) {
+    const i = books.findIndex(b => b.id === id);
+    if (i !== -1) { books[i] = { ...books[i], ...patch }; save(); }
+  }
+  function deleteBook(id) {
+    books = books.filter(b => b.id !== id); save();
+  }
+
+  // ---------- Validation ----------
+  function validate({ title, author, price, stock }) {
+    const errors = [];
+    if (!title || !author) errors.push('Title and Author are required.');
+    if (price != null && Number(price) < 0) errors.push('Price must be ≥ 0.');
+    if (stock != null && Number(stock) < 0) errors.push('Stock must be ≥ 0.');
+    return errors;
+  }
+
+  // ---------- Derivations ----------
+  function filteredSorted() {
+    const q = search.trim().toLowerCase();
+    let arr = books.filter(b =>
+      (!category || (b.category || '').toLowerCase() === category.toLowerCase()) &&
+      (!q || (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q))
+    );
+    const [key, dir] = sort.split('-');
+    arr.sort((a,b)=>{
+      const va = (a[key] ?? '').toString().toLowerCase();
+      const vb = (b[key] ?? '').toString().toLowerCase();
+      if (key === 'price' || key === 'stock') {
+        const na = Number(a[key]||0), nb = Number(b[key]||0);
+        return dir==='asc'? na-nb : nb-na;
+      }
+      return dir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+    return arr;
+  }
+
+  function categories() {
+    const set = new Set(books.map(b => (b.category||'').trim()).filter(Boolean));
+    return Array.from(set).sort((a,b)=>a.localeCompare(b));
+  }
+
+  // ---------- Render ----------
+  function renderCategories() {
+    const sel = $('#categoryFilter');
+    sel.innerHTML = '<option value="">All Categories</option>' + categories().map(c=>`<option value="${c}">${c}</option>`).join('');
+    sel.value = category;
+  }
+
+  function renderTable() {
+    const body = $('#tableBody');
+    const arr = filteredSorted();
+    const total = arr.length;
+    const maxPage = Math.max(1, Math.ceil(total / pageSize));
+    page = Math.min(page, maxPage);
+    const start = (page-1) * pageSize;
+    const slice = arr.slice(start, start + pageSize);
+    body.innerHTML = slice.map(b => `
+      <tr class="border-t">
+        <td class="px-4 py-2">${sanitize(b.title)}</td>
+        <td class="px-4 py-2">${sanitize(b.author)}</td>
+        <td class="px-4 py-2">${sanitize(b.category)}</td>
+        <td class="px-4 py-2">${fmt.format(b.price || 0)}</td>
+        <td class="px-4 py-2">${b.stock ?? 0}</td>
+        <td class="px-4 py-2 text-right flex gap-2 justify-end">
+          <button onclick="openModal('edit','${b.id}')" class="px-2 py-1 rounded bg-yellow-100 hover:bg-yellow-200">✎</button>
+          <button onclick="deleteBookHandler('${b.id}')" class="px-2 py-1 rounded bg-red-100 hover:bg-red-200">🗑</button>
+        </td>
+      </tr>
+    `).join('');
+
+    byText($('#pageInfo'), `Page ${page} of ${maxPage} — ${total} books`);
+    $('#prevBtn').disabled = page <= 1;
+    $('#nextBtn').disabled = page >= maxPage;
+  }
+
+  // ---------- Modal ----------
+  function openModal(mode, id=null) {
+    $('#modal').classList.remove('hidden');
+    $('#formError').classList.add('hidden');
+    if (mode === 'add') {
+      byText($('#modalTitle'), 'Add Book');
+      $('#bookForm').reset();
+      $('#bookId').value = '';
+    } else {
+      byText($('#modalTitle'), 'Edit Book');
+      const b = books.find(x=>x.id===id);
+      if (!b) return;
+      $('#bookId').value = b.id;
+      $('#titleInput').value = b.title;
+      $('#authorInput').value = b.author;
+      $('#categoryInput').value = b.category;
+      $('#priceInput').value = b.price;
+      $('#stockInput').value = b.stock;
+    }
+  }
+
+  function closeModal() {
+    $('#modal').classList.add('hidden');
+  }
+
+  // ---------- Handlers ----------
+  function deleteBookHandler(id) {
+    if (confirm('Delete this book?')) {
+      deleteBook(id);
+      renderCategories();
+      renderTable();
+    }
+  }
+
+  // ---------- Events ----------
+  $('#addBtn').onclick = ()=> openModal('add');
+  $('#closeModal').onclick = closeModal;
+  $('#cancelBtn').onclick = closeModal;
+
+  $('#bookForm').onsubmit = (e)=>{
+    e.preventDefault();
+    const book = {
+      title: $('#titleInput').value.trim(),
+      author: $('#authorInput').value.trim(),
+      category: $('#categoryInput').value.trim(),
+      price: Number($('#priceInput').value),
+      stock: Number($('#stockInput').value)
+    };
+    const errors = validate(book);
+    if (errors.length) {
+      byText($('#formError'), errors.join(' '));
+      $('#formError').classList.remove('hidden');
+      return;
+    }
+    const id = $('#bookId').value;
+    if (id) updateBook(id, book);
+    else addBook(book);
+    closeModal();
+    renderCategories();
+    renderTable();
+  };
+
+  $('#searchInput').oninput = (e)=>{ search = e.target.value; page=1; renderTable(); };
+  $('#categoryFilter').onchange = (e)=>{ category = e.target.value; page=1; renderTable(); };
+  $('#sortSelect').onchange = (e)=>{ sort = e.target.value; renderTable(); };
+  $('#prevBtn').onclick = ()=>{ if(page>1){ page--; renderTable(); } };
+  $('#nextBtn').onclick = ()=>{ page++; renderTable(); };
+
+  // Import/Export
+  $('#exportBtn').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(books,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'books.json';
+    a.click();
+  };
+
+  $('#importBtn').onclick = ()=> $('#fileInput').click();
+  $('#fileInput').onchange = (e)=>{
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      try {
+        const arr = JSON.parse(ev.target.result);
+        if (Array.isArray(arr)) {
+          books = arr.map(b=>({id: crypto.randomUUID(), ...b}));
+          save();
+          renderCategories();
+          renderTable();
+        }
+      } catch {
+        alert('Invalid JSON file');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // ---------- Init ----------
+  load();
+  renderCategories();
+  renderTable();
+  </script>
+</body>
+</html>
