@@ -67,7 +67,7 @@ Dalam pengembangan, **IBM Granite** digunakan untuk:
 
 ## 🔗 Demo Online
 
-[👉 Klik di sini untuk mencoba ByteBooks](/Applications/XAMPP/xamppfiles/htdocs/bytebooks/index.html)  
+[👉 Klik di sini untuk mencoba ByteBooks](//Applications/XAMPP/xamppfiles/htdocs/bytebooks/index.html)  
 
 ---
 
